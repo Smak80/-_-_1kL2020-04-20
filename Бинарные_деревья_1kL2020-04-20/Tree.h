@@ -1,16 +1,13 @@
 #pragma once
-struct node
-{
-	int value;
-	int count = 1;
-	node* left = nullptr;
-	node* right = nullptr;
-};
+#include "tree_struct.h"
 
-void addToTree(node*& tree, int value);
+enum traverse_type{infix, prefix, postfix};
 
-bool removeFromTree(node*& tree, int value);
+void addToTree(tree& tree, int value);
+bool removeFromTree(tree& tree, int value);
+int findInTree(tree tree, int value);
+void dropTree(tree& tree);
 
-int findInTree(const node* tree, int value);
-
-void dropTree(node*& tree);
+queue prefix_traverse(tree tree);
+queue infix_traverse(tree tree);
+queue postfix_traverse(tree tree);
