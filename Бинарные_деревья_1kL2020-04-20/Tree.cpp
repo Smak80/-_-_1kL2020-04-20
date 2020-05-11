@@ -97,16 +97,10 @@ bool removeFromTree(node*& root, int value)
 			mergeTree(root->left, root->right);
 			root = root->left;
 			delete rem;
-			balance(root);
 			return true;
 		}
 		auto& subtree = (value<root->value)?root->left:root->right;
 		bool r = removeFromTree(subtree, value);
-		if (r)
-		{
-			calc_height(root);
-			balance(root);
-		}
 		return r;
 	}
 	return false;
@@ -206,9 +200,11 @@ void mergeTree(node*& leftRoot, node* rightRoot)
 {
 	if (!leftRoot)
 		leftRoot = rightRoot;
-	else
+	else {
 		mergeTree(leftRoot->right, rightRoot);
 		calc_height(leftRoot);
+		balance(leftRoot);
+	}
 }
 
 void balance(node*& root)

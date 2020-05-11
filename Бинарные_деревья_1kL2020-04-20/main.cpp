@@ -1,11 +1,9 @@
 #include <iostream>
 #include <Windows.h>
-
-
 #include "queue.h"
 #include "Tree.h"
 using namespace std;
-void show_tree_query(queue t)
+void show_tree_query(queue& t)
 {
 	while (t.size>0)
 	{
@@ -18,19 +16,69 @@ void show_tree_query(queue t)
 		}
 	}
 }
+
+inline void show_spaces(int num){
+	for (int i = 0; i< num; i++){
+		cout << "=";
+	}
+}
+
+void show_tree_as_tree(queue& t)
+{
+	int h = 0;
+	if (t.head->node) h = t.head->node->height;
+	if (!h) return;
+	auto level = 0;
+	int full_row = (1 << h) - 1;
+	while (t.size > 0)
+	{
+		node* n;
+		level++;
+		auto pos = 0;
+		int spaces = (1 << (h - level)) - 1;
+		do {
+			show_spaces(spaces);
+			pos += spaces;
+			auto got = dequeue(t, n);
+			if (got)
+			{
+				if (n) cout << n->value;
+				else cout << " ";
+				pos++;
+			}
+			show_spaces(spaces);
+			pos+=spaces;
+			if (pos < full_row) {
+				cout << "=";
+				pos++;
+			}
+		} while (pos < full_row);
+		cout << endl;
+	}	
+}
+
+
 void main()
 {
 	setlocale(LC_ALL, "Rus");
 	int arr[] = {
-		5, 2, 8, 1, 4, 0, 6, 9, 10, 7, 1, 1, 7, 7, 0, 4, 5, 5, 10
+		5, 2, 8, 1, 0, 4, 0, 6, 8, 9, 7, 1, 1, 7, 7, 0, 4, 5, 5, 9
 	};
+	
 	auto sz = sizeof(arr)/sizeof(arr[0]);
 	tree tree;
+	queue q;
 	for (int i = 0; i<sz; i++)
 	{
 		addToTree(tree, arr[i]);
+		q = wide_traverse(tree, true);
+		show_tree_query(q);
 	}
-	auto q = infix_traverse(tree);
+	cout << "-----TREE------" << endl;
+	q = wide_traverse(tree, true);
+	show_tree_as_tree(q);
+	cout << "---------------" << endl;
+	q = infix_traverse(tree);
 	show_tree_query(q);
 	q = prefix_traverse(tree);
 	show_tree_query(q);
