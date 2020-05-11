@@ -36,11 +36,22 @@ void main()
 	show_tree_query(q);
 	q = postfix_traverse(tree);
 	show_tree_query(q);
+
+	q = wide_traverse(tree, true);
+	show_tree_query(q);
+	q = wide_traverse(tree, false);
+	show_tree_query(q);
+	
 	removeFromTree(tree, 5);
+	q = wide_traverse(tree, true);
+	show_tree_query(q);
+	
 	removeFromTree(tree, 9);
 	removeFromTree(tree, 0);
 	removeFromTree(tree, 2);
 	removeFromTree(tree, -1);
+	q = wide_traverse(tree, true);
+	show_tree_query(q);
 	findInTree(tree, 1);
 	findInTree(tree, 5);
 	dropTree(tree);

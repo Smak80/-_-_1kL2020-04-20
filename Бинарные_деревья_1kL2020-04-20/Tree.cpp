@@ -1,14 +1,70 @@
 #include "Tree.h"
 
+#include <cmath>
+
+
 #include "queue.h"
 
+enum traverse_type{infix, prefix, postfix};
 void traverse(queue& q, node* root, traverse_type type);
+
 bool addToTree(node*& tree, int value);
 bool removeFromTree(node*& tree, int value);
+void mergeTree(node*& tree, node* subtree);
 int findInTree(const node* tree, int value);
 void dropTree(node*& tree);
 
+void wide_traverse(queue& q, node*& root, bool include_empty);
+inline int get_height(const node* n);
+inline void calc_height(node*& n);
 
+//Функция балансировки дерева
+void balance(node*& n);
+//Малый левый поворот
+void small_left_rotate(node*& n);
+//Большой левый поворот
+void big_left_rotate(node*& n);
+//Малый правый поворот
+void small_right_rotate(node*& n);
+//Большой правый поворот
+void big_right_rotate(node*& n);
+
+void wide_traverse(queue& queue, node*& root, bool include_empty)
+{
+	if (!root) return;
+	enqueue(queue, root);
+	auto q = queue.head;
+	const auto cnt = 1 << (root->height - 1);
+	for (int i = 1; i < cnt && q; i++)
+	{
+		auto ln = q->node ? q->node->left : nullptr;
+		auto rn = q->node ? q->node->right : nullptr;
+		if (ln || include_empty) enqueue(queue, ln);
+		if (rn || include_empty) enqueue(queue, rn);
+		q = q->next;
+	}
+}
+
+inline int get_height(const node* n)
+{
+	if (!n) return 0;
+	auto lh = n->left ? n->left->height : 0;
+	auto rh = n->right ? n->right->height : 0;
+	return 1 + (lh > rh ? lh : rh);
+}
+
+inline void calc_height(node*& n)
+{
+	if (n)
+		n->height = get_height(n);
+}
+
+queue wide_traverse(tree tree, bool include_empty)
+{
+	queue q;
+	wide_traverse(q, tree.root, include_empty);
+	return q;
+}
 
 bool addToTree(node*& root, int value)
 {
@@ -20,6 +76,8 @@ bool addToTree(node*& root, int value)
 		}
 		auto& subtree = (value < root->value)? root->left : root->right;
 		bool r = addToTree(subtree, value);
+		if (r) calc_height(root);
+		balance(root);
 		return r;
 		
 	}
@@ -29,8 +87,6 @@ bool addToTree(node*& root, int value)
 	return true;
 }
 
-void mergeTree(node*& tree, node* subtree);
-
 bool removeFromTree(node*& root, int value)
 {
 	if (root)
@@ -38,16 +94,20 @@ bool removeFromTree(node*& root, int value)
 		if (value == root->value)
 		{
 			node* rem = root;
-			if (root->left)
-			{
-				mergeTree(root->left, root->right);
-				root = root->left;
-			} else root = root->right;
+			mergeTree(root->left, root->right);
+			root = root->left;
 			delete rem;
+			balance(root);
 			return true;
 		}
 		auto& subtree = (value<root->value)?root->left:root->right;
-		return removeFromTree(subtree, value);
+		bool r = removeFromTree(subtree, value);
+		if (r)
+		{
+			calc_height(root);
+			balance(root);
+		}
+		return r;
 	}
 	return false;
 }
@@ -142,12 +202,97 @@ void traverse(queue& q, node* root, traverse_type type)
 	}
 }
 
-void mergeTree(node*& root, node* subtree)
+void mergeTree(node*& leftRoot, node* rightRoot)
 {
-	if (root)
-		if (subtree->value < root->value)
-			mergeTree(root->left, subtree);
+	if (!leftRoot)
+		leftRoot = rightRoot;
+	else
+		mergeTree(leftRoot->right, rightRoot);
+		calc_height(leftRoot);
+}
+
+void balance(node*& root)
+{
+	if (!root) return;
+	//Определяем высоту левого и правого поддеревьев
+	auto lh = get_height(root->left);
+	auto rh = get_height(root->right);
+	//Если высоты различаются на 2 или более уровней
+	if (abs(lh-rh)>=2)
+	{
+		//Если правая ветвь больше, будем делать левый поворот
+		if (rh>lh)
+		{
+			//Определем высоты поддеревьев в правом поддереве
+			auto rlh = get_height(root->right->left);
+			auto rrh = get_height(root->right->right);
+			//Если правое под-поддерево больше, делаем малый поворот 
+			if (rrh>rlh) small_left_rotate(root);
+			//иначе - большой
+			else big_left_rotate(root);
+		}
+		//Будем делать правый поворот, если левая ветвь больше
 		else
-			mergeTree(root->right, subtree);
-	else root = subtree;
+		{
+			//Определем высоты поддеревьев в левом поддереве
+			auto llh = get_height(root->left->left);
+			auto lrh = get_height(root->left->right);
+			//Если левое под-поддерево больше, делаем малый поворот
+			if (llh>lrh) small_right_rotate(root);
+			//иначе - большой
+			else big_right_rotate(root);
+		}
+	}
+}
+
+void small_left_rotate(node*& root)
+{
+	//Выполнение малого левого поворота возможно,
+	//если есть узел и правое поддерево
+	if (root && root->right)
+	{
+		node* t = root;
+		root = root->right;
+		t->right = root->left;
+		root->left = t;
+		calc_height(root->left);
+		calc_height(root);
+	}
+}
+
+void big_left_rotate(node*& root)
+{
+	//Выполнение большого левого поворота возможно,
+	//если есть узел и правое поддерево
+	if (root && root->right)
+	{
+		small_right_rotate(root->right);
+		small_left_rotate(root);
+	}
+}
+
+void small_right_rotate(node*& root)
+{
+	//Выполнение малого правого поворота возможно,
+	//если есть узел и левое поддерево
+	if (root && root->left)
+	{
+		node* t = root;
+		root = root->left;
+		t->left = root->right;
+		root->right = t;
+		calc_height(root->right);
+		calc_height(root);
+	}
+}
+
+void big_right_rotate(node*& root)
+{
+	//Выполнение большого правого поворота возможно,
+	//если есть узел и левое поддерево
+	if (root && root->left)
+	{
+		small_left_rotate(root->left);
+		small_right_rotate(root);
+	}
 }
